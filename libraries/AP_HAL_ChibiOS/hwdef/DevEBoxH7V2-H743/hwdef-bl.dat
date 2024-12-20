@@ -11,14 +11,13 @@ APJ_BOARD_ID 1061
 OSCILLATOR_HZ 25000000
 
 FLASH_SIZE_KB 2048
-FLASH_RESERVE_START_KB 0
-FLASH_RESERVE_END_KB 0
-FLASH_BOOTLOADER_LOAD_KB 128
 
-# 8mb external flash
-#EXT_FLASH_SIZE_MB 8
-#EXT_FLASH_RESERVE_START_KB 1024
-#EXT_FLASH_RESERVE_END_KB 448
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sectors
+FLASH_BOOTLOADER_LOAD_KB 128
 
 # order of UARTs (and USB). Allow bootloading on USB and telem1
 SERIAL_ORDER OTG1 USART1 UART7
