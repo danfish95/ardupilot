@@ -32,6 +32,7 @@
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
+#include "SIM_Volz.h"
 
 namespace SITL {
 
@@ -197,7 +198,7 @@ public:
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
-    AP_Int8  engine_fail; // engine servo to fail (0-7)
+    AP_Int32 engine_fail; // mask of engine/motor servo outputs to fail
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -512,6 +513,9 @@ public:
 #endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+#if AP_SIM_VOLZ_ENABLED
+    Volz volz_sim;
+#endif  // AP_SIM_VOLZ_ENABLED
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice dronecan_sim;
 #endif
