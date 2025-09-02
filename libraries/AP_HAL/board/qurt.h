@@ -8,6 +8,10 @@
 #define HAL_STORAGE_SIZE            32768
 #define HAL_STORAGE_SIZE_AVAILABLE  HAL_STORAGE_SIZE
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
+
 // only include if compiling C++ code
 #ifdef __cplusplus
 #include <AP_HAL_QURT/Semaphores.h>
@@ -68,8 +72,6 @@
 // this is an absolute path, as required by AP_Param
 #define HAL_PARAM_DEFAULTS_PATH AP_FILESYSTEM_POSIX_MAP_FILENAME_BASEDIR "/APM/defaults.parm"
 #endif
-
-#define USE_LIBC_REALLOC 1
 
 #define HAL_WITH_ESC_TELEM 1
 

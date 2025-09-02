@@ -203,7 +203,7 @@ void RangeFinder::convert_params(void)
   finders here. For now we won't allow for hot-plugging of
   rangefinders.
  */
-void RangeFinder::init(enum Rotation orientation_default)
+__INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
 {
     convert_params();
 
@@ -260,7 +260,7 @@ void RangeFinder::update(void)
 #endif
 }
 
-bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
+__INITFUNC__ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance, uint8_t serial_instance)
 {
     if (!backend) {
         return false;
@@ -282,7 +282,7 @@ bool RangeFinder::_add_backend(AP_RangeFinder_Backend *backend, uint8_t instance
 /*
   detect if an instance of a rangefinder is connected. 
  */
-void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
+__INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
 {
     AP_RangeFinder_Backend_Serial *(*serial_create_fn)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&) = nullptr;
 
@@ -347,11 +347,13 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
     case Type::TRI2C:
         if (params[instance].address) {
             FOREACH_I2C(i) {
+                auto *device_ptr = hal.i2c_mgr->get_device_ptr(i, params[instance].address);
                 if (_add_backend(AP_RangeFinder_TeraRangerI2C::detect(state[instance], params[instance],
-                                                                      hal.i2c_mgr->get_device(i, params[instance].address)),
+                                                                      device_ptr),
                                  instance)) {
                     break;
                 }
+                delete device_ptr;
             }
         }
         break;
@@ -577,11 +579,16 @@ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial_instance)
         _add_backend(NEW_NOTHROW AP_RangeFinder_TOFSenseP_CAN(state[instance], params[instance]), instance);
         break;
 #endif
-#if AP_RANGEFINDER_NRA24_CAN_ENABLED
+#if AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
+  #if AP_RANGEFINDER_NRA24_CAN_ENABLED
     case Type::NRA24_CAN:
+  #endif
+  #if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+    case Type::HEXSOON_RADAR:
+  #endif
         _add_backend(NEW_NOTHROW AP_RangeFinder_NRA24_CAN(state[instance], params[instance]), instance);
         break;
-#endif
+#endif  // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
 #if AP_RANGEFINDER_TOFSENSEF_I2C_ENABLED
     case Type::TOFSenseF_I2C: {
         uint8_t addr = TOFSENSEP_I2C_DEFAULT_ADDR;
@@ -679,7 +686,26 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    return (find_instance(orientation) != nullptr);
+    if ((find_instance(orientation) != nullptr)) {
+        // we have a rangefinder with this orientation
+        return true;
+    }
+
+    // special case for DroneCAN
+    // DroneCAN rangefinder backend is not created until we receive a
+    // measurement, so we need to check the params directly
+#if AP_RANGEFINDER_DRONECAN_ENABLED
+     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
+        if ((RangeFinder::Type)params[i].type.get() == RangeFinder::Type::UAVCAN) {
+            if (params[i].orientation.get() == orientation) {
+                return true;
+            }
+        }
+    }
+#endif
+
+    // no rangefinder with this orientation
+    return false;
 }
 
 // find first range finder instance with the specified orientation
@@ -887,8 +913,14 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
         }
 #endif  // AP_RANGEFINDER_ANALOG_ENABLED || AP_RANGEFINDER_PWM_ENABLED
 
-#if AP_RANGEFINDER_NRA24_CAN_ENABLED
-        case Type::NRA24_CAN: {
+#if AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED
+  #if AP_RANGEFINDER_NRA24_CAN_ENABLED
+        case Type::NRA24_CAN:
+  #endif
+  #if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+        case Type::HEXSOON_RADAR:
+  #endif
+        {
             if (drivers[i]->status() == Status::NoData) {
                 // This sensor stops sending data if there is no relative motion. This will mostly happen during takeoff, before arming
                 // To avoid pre-arm failure, return true even though there is no data.
@@ -897,7 +929,7 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
             }
             break;
         }
-#endif
+#endif // AP_RANGEFINDER_NRA24_CAN_DRIVER_ENABLED 
 
         default:
             break;
