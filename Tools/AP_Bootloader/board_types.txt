@@ -318,6 +318,7 @@ AP_HW_KHA_ETH                        1315
 AP_HW_FlysparkF4                     1361
 
 AP_HW_DevEBoxH7V2-H743               1362
+AP_HW_DevEBoxH7V2-H743-ICM42688      1363
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
