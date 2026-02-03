@@ -8,6 +8,9 @@ MCU STM32H7xx STM32H743xx
 # board ID for firmware load
 APJ_BOARD_ID 1363
 
+# ChibiOS enforces a <=23 character board name in system ID strings.
+define CHIBIOS_SHORT_BOARD_NAME "DevEBoxH7V2-H743I"
+
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 25000000
 
